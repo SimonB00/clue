@@ -26,7 +26,9 @@ public:
   ~CLUEAlgo(){} 
     
   // public variables
-  float dc_, rhoc_, outlierDeltaFactor_;
+  float dc_;  // cut-off distance in the calculation of local density
+  float rhoc_;  // minimum density to promote a point as a seed or the maximum density to demote a point as an outlier
+  float outlierDeltaFactor_;
   bool verbose_;
     
   Points points_;
@@ -36,10 +38,10 @@ public:
     // input variables
     for(int i=0; i<n; ++i)
       {
-	points_.x.push_back(x[i]);
-	points_.y.push_back(y[i]);
-	points_.layer.push_back(layer[i]);
-	points_.weight.push_back(weight[i]);
+	      points_.x.push_back(x[i]);
+	      points_.y.push_back(y[i]);
+	      points_.layer.push_back(layer[i]);
+	      points_.weight.push_back(weight[i]);
       }
 
     points_.n = points_.x.size();
