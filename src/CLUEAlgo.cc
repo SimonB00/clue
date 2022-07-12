@@ -125,7 +125,7 @@ void CLUEAlgo::findAndAssignClusters(){
   int nClusters = 0;
 
   // find cluster seeds and outlier
-  std::vector<int> localStack;
+  std::vector<int> localStack;  // this vector will contain the indexes of all the seeds
   // loop over all points
   for(unsigned i = 0; i < points_.n; i++) {
     // initialize clusterIndex
@@ -137,22 +137,19 @@ void CLUEAlgo::findAndAssignClusters(){
     // determine seed or outlier 
     bool isSeed = (deltai > dc_) && (rhoi >= rhoc_);
     bool isOutlier = (deltai > outlierDeltaFactor_ * dc_) && (rhoi < rhoc_);
-    if (isSeed)
-      {
-	// set isSeed as 1
-	points_.isSeed[i] = 1;
-	// set cluster id
-	points_.clusterIndex[i] = nClusters;
-	// increment number of clusters
-	nClusters++;
-	// add seed into local stack
-	localStack.push_back(i);
-      }
-    else if (!isOutlier)
-      {
-	// register as follower at its nearest higher
-	points_.followers[points_.nearestHigher[i]].push_back(i);   
-      }
+    if (isSeed) {
+	    // set isSeed as 1
+	    points_.isSeed[i] = 1;
+	    // set cluster id
+	    points_.clusterIndex[i] = nClusters;
+	    // increment number of clusters
+	    ++nClusters;
+	    // add seed into local stack
+	    localStack.push_back(i);
+    } else if (!isOutlier) {
+	    // register as follower at its nearest higher
+	    points_.followers[points_.nearestHigher[i]].push_back(i);
+    }
   }
 
   auto finish = std::chrono::high_resolution_clock::now();

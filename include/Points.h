@@ -2,7 +2,6 @@
 #define Points_h
 
 struct Points {
-  
   std::vector<float> x;
   std::vector<float> y;
   std::vector<int> layer;
