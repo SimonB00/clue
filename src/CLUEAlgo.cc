@@ -30,15 +30,16 @@ void CLUEAlgo::prepareDataStructures( std::array<LayerTiles, NLAYERS> & allLayer
   for (int i=0; i<points_.n; ++i){
     // push index of points into tiles
     allLayerTiles[points_.layer[i]].fill( points_.x[i], points_.y[i], i);
+    // so it simply takes the layer in which the hits where detected (there is only 1 layer actually, so it should be easier),
+    // divides them in tiles (bins) and saves the index of the point (hit) recorded in each of them.
   }
 }
 
 
 void CLUEAlgo::calculateLocalDensity( std::array<LayerTiles, NLAYERS> & allLayerTiles ){
-
   // loop over all points
   for(unsigned i = 0; i < points_.n; ++i) {
-    LayerTiles& lt = allLayerTiles[points_.layer[i]];
+    LayerTiles& lt = allLayerTiles[points_.layer[i]]; // there is only one layer, so this will always be the same
 
     // get search box
     std::array<int,4> search_box = lt.searchBox(points_.x[i]-dc_, points_.x[i]+dc_, points_.y[i]-dc_, points_.y[i]+dc_);
@@ -53,7 +54,7 @@ void CLUEAlgo::calculateLocalDensity( std::array<LayerTiles, NLAYERS> & allLayer
         int binSize = lt[binId].size();
         
         // iterate inside this bin
-        for (int binIter = 0; binIter < binSize; binIter++) {
+        for (int binIter = 0; binIter < binSize; ++binIter) {
           int j = lt[binId][binIter];
           // query N_{dc_}(i)
           float dist_ij = distance(i, j);
@@ -71,11 +72,11 @@ void CLUEAlgo::calculateLocalDensity( std::array<LayerTiles, NLAYERS> & allLayer
 
 void CLUEAlgo::calculateDistanceToHigher( std::array<LayerTiles, NLAYERS> & allLayerTiles ){
   // loop over all points
-  float dm = outlierDeltaFactor_ * dc_;
+  float dm = outlierDeltaFactor_ * dc_; // separation requirement for seeds (I suppose)
   for(unsigned i = 0; i < points_.n; ++i) {
     // default values of delta and nearest higher for i
     float delta_i = std::numeric_limits<float>::max();
-    int nearestHigher_i = -1;
+    int nearestHigher_i = -1; // if this doesn't change, the point is either a seed or an outlier
     float xi = points_.x[i];
     float yi = points_.y[i];
     float rho_i = points_.rho[i];
@@ -94,7 +95,7 @@ void CLUEAlgo::calculateDistanceToHigher( std::array<LayerTiles, NLAYERS> & allL
         int binSize = lt[binId].size();
 
         // interate inside this bin
-        for (int binIter = 0; binIter < binSize; binIter++) {
+        for (int binIter = 0; binIter < binSize; ++binIter) {
           int j = lt[binId][binIter];
           // query N'_{dm}(i)
           bool foundHigher = (points_.rho[j] > rho_i);
