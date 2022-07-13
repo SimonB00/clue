@@ -1,9 +1,11 @@
 #ifndef Points_h
 #define Points_h
 
+template <uint8_t N>
 struct Points {
-  std::vector<float> x;
-  std::vector<float> y;
+  std::array<std::vector<float>,N> coordinates_; // this array contains all the N-dimensional coordinate vectors
+  // std::vector<float> x;
+  // std::vector<float> y;
   std::vector<int> layer;
   std::vector<float> weight;
   
@@ -21,8 +23,11 @@ struct Points {
   int n;
 
   void clear() {
-    x.clear();
-    y.clear();
+    // x.clear();
+    // y.clear();
+    for(int i = 0; i != N; ++i) {
+      coordinates_[i].clear();
+    }
     layer.clear();
     weight.clear();
 

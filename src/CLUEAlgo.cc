@@ -1,6 +1,7 @@
 #include "CLUEAlgo.h"
 
-void CLUEAlgo::makeClusters(){
+template <uint8_t N>
+void CLUEAlgo<N>::makeClusters(){
   std::array<LayerTiles, NLAYERS> allLayerTiles;
   // start clustering
   auto start = std::chrono::high_resolution_clock::now();
@@ -22,32 +23,40 @@ void CLUEAlgo::makeClusters(){
   elapsed = finish - start;
   std::cout << "--- calculateDistanceToHigher: " << elapsed.count() *1000 << " ms\n";
 
-  findAndAssignClusters();  
+  findAndAssignClusters();
 }
 
-
-void CLUEAlgo::prepareDataStructures( std::array<LayerTiles, NLAYERS> & allLayerTiles ){
+template <uint8_t N>
+void CLUEAlgo<N>::prepareDataStructures( std::array<LayerTiles<N>, NLAYERS> & allLayerTiles ) {
   for (int i=0; i<points_.n; ++i){
     // push index of points into tiles
-    allLayerTiles[points_.layer[i]].fill( points_.x[i], points_.y[i], i);
+    std::vector<float> coords;
+    for(int j = 0; j != N; ++j) {
+      coords.push_back(points_.coordinates_[j][i]);
+    }
+    allLayerTiles[points_.layer[i]].fill(coords, i);
     // so it simply takes the layer in which the hits where detected (there is only 1 layer actually, so it should be easier),
     // divides them in tiles (bins) and saves the index of the point (hit) recorded in each of them.
   }
 }
 
-
-void CLUEAlgo::calculateLocalDensity( std::array<LayerTiles, NLAYERS> & allLayerTiles ){
+template <uint8_t N>
+void CLUEAlgo<N>::calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> & allLayerTiles ) {
   // loop over all points
   for(unsigned i = 0; i < points_.n; ++i) {
     LayerTiles& lt = allLayerTiles[points_.layer[i]]; // there is only one layer, so this will always be the same
 
     // get search box
-    std::array<int,4> search_box = lt.searchBox(points_.x[i]-dc_, points_.x[i]+dc_, points_.y[i]-dc_, points_.y[i]+dc_);
+    std::array<std::vector<float>,N> minMax;
+    for(int j = 0; j != N; ++j) {
+      std::vector<float> partial_minMax{points_.coordinates_[j][i]-dc_,points_.coordinates_[j][i]+dc_};
+      minMax[j] = partial_minMax;
+    }
+    std::array<int,2*N> search_box = lt.searchBox(minMax);
 
     // loop over bins in the search box
     for(int xBin = search_box[0]; xBin < search_box[1]+1; ++xBin) {
       for(int yBin = search_box[2]; yBin < search_box[3]+1; ++yBin) {
-
         // get the id of this bin
         int binId = lt.getGlobalBinByBin(xBin,yBin);
         // get the size of this bin
@@ -69,8 +78,8 @@ void CLUEAlgo::calculateLocalDensity( std::array<LayerTiles, NLAYERS> & allLayer
   } // end of loop over points
 }
 
-
-void CLUEAlgo::calculateDistanceToHigher( std::array<LayerTiles, NLAYERS> & allLayerTiles ){
+template <uint8_t N>
+void CLUEAlgo<N>::calculateDistanceToHigher(std::array<LayerTiles<N>, NLAYERS> & allLayerTiles ) {
   // loop over all points
   float dm = outlierDeltaFactor_ * dc_; // separation requirement for seeds (I suppose)
   for(unsigned i = 0; i < points_.n; ++i) {
@@ -119,7 +128,8 @@ void CLUEAlgo::calculateDistanceToHigher( std::array<LayerTiles, NLAYERS> & allL
   } // end of loop over points
 }
 
-void CLUEAlgo::findAndAssignClusters(){
+template <uint8_t N>
+void CLUEAlgo<N>::findAndAssignClusters(){
   auto start = std::chrono::high_resolution_clock::now();
 
   int nClusters = 0;
@@ -177,15 +187,19 @@ void CLUEAlgo::findAndAssignClusters(){
 
 }
 
-inline float CLUEAlgo::distance(int i, int j) const {
-
+template <uint8_t N>
+inline float CLUEAlgo<N>::distance(int i, int j) const {
   // 2-d distance on the layer
   if(points_.layer[i] == points_.layer[j] ) {
-    const float dx = points_.x[i] - points_.x[j];
-    const float dy = points_.y[i] - points_.y[j];
-    return std::sqrt(dx * dx + dy * dy);
+    //const float dx = points_.x[i] - points_.x[j];
+    //const float dy = points_.y[i] - points_.y[j];
+    //return std::sqrt(dx * dx + dy * dy);
+    float qSum = 0.f;   // quadratic sum
+    for(int k = 0: k != N; ++k) {
+      qSum += std::pow(points_.coordinates_[k][i] - points_.coordinates_[k][j],2);
+    }
+    return std::sqrt(qSum);
   } else {
     return std::numeric_limits<float>::max();
   }
-
 }

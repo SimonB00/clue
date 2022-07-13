@@ -14,8 +14,8 @@
 #include "LayerTiles.h"
 #include "Points.h"
 
+template <uint8_t N>
 class CLUEAlgo{
-
 public:
   CLUEAlgo(float dc, float rhoc, float outlierDeltaFactor, bool verbose) {
     dc_ = dc; 
@@ -31,20 +31,24 @@ public:
   float outlierDeltaFactor_;
   bool verbose_;
     
-  Points points_;
+  Points<N> points_;
   
-  bool setPoints(int n, float* x, float* y, int* layer, float* weight) {
+  //bool setPoints(int n, float* x, float* y, int* layer, float* weight) {
+  bool setPoints(int n, std::array<std::vector<float>,N> coordinates, int* layer, float* weight) {
+    
     points_.clear();
     // input variables
-    for(int i=0; i<n; ++i)
-      {
-	      points_.x.push_back(x[i]);
-	      points_.y.push_back(y[i]);
-	      points_.layer.push_back(layer[i]);
-	      points_.weight.push_back(weight[i]);
+    for(int i=0; i<n; ++i) {
+	    //points_.x.push_back(x[i]);
+	    //points_.y.push_back(y[i]);
+	    for(int j = 0: j != N; ++j) {
+        points_.coordinates_[j].push_back(coordinates[j][i]);
       }
+      points_.layer.push_back(layer[i]);
+	    points_.weight.push_back(weight[i]);
+    }
 
-    points_.n = points_.x.size();
+    points_.n = points_.coordinates_[0].size();
     if(points_.n == 0)
       return 1;
 
@@ -108,9 +112,9 @@ public:
         
 private:
   // private member methods
-  void prepareDataStructures(std::array<LayerTiles, NLAYERS> & );
-  void calculateLocalDensity(std::array<LayerTiles, NLAYERS> & );
-  void calculateDistanceToHigher(std::array<LayerTiles, NLAYERS> & );
+  void prepareDataStructures(std::array<LayerTiles<N>, NLAYERS> &);
+  void calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> &);
+  void calculateDistanceToHigher(std::array<LayerTiles<N>, NLAYERS> &);
   void findAndAssignClusters();
   inline float distance(int , int) const ;
 };
