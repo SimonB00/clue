@@ -55,25 +55,65 @@ void CLUEAlgo<N>::calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> & all
     std::array<int,2*N> search_box = lt.searchBox(minMax);
 
     // loop over bins in the search box
-    for(int xBin = search_box[0]; xBin < search_box[1]+1; ++xBin) {
-      for(int yBin = search_box[2]; yBin < search_box[3]+1; ++yBin) {
-        // get the id of this bin
-        int binId = lt.getGlobalBinByBin(xBin,yBin);
-        // get the size of this bin
-        int binSize = lt[binId].size();
-        
-        // iterate inside this bin
-        for (int binIter = 0; binIter < binSize; ++binIter) {
-          int j = lt[binId][binIter];
-          // query N_{dc_}(i)
-          float dist_ij = distance(i, j);
-          if(dist_ij <= dc_) {
-            // sum weights within N_{dc_}(i)
-            points_.rho[i] += (i == j ? 1.f : 0.5f) * points_.weight[j];
-          }
-        } // end of interate inside this bin
-
+    
+    //for(int xBin = search_box[0]; xBin < search_box[1]+1; ++xBin) {
+    //  for(int yBin = search_box[2]; yBin < search_box[3]+1; ++yBin) {
+    //    // get the id of this bin
+    //    int binId = lt.getGlobalBinByBin(xBin,yBin);
+    //    // get the size of this bin
+    //    int binSize = lt[binId].size();
+    //    
+    //    // iterate inside this bin
+    //    for (int binIter = 0; binIter < binSize; ++binIter) {
+    //      int j = lt[binId][binIter];
+    //      // query N_{dc_}(i)
+    //      float dist_ij = distance(i, j);
+    //      if(dist_ij <= dc_) {
+    //        // sum weights within N_{dc_}(i)
+    //        points_.rho[i] += (i == j ? 1.f : 0.5f) * points_.weight[j];
+    //      }
+    //    } // end of interate inside this bin
+    //
+    //  }
+    //} // end of loop over bins in search box
+    
+    std::vector<std::vector<int>> binsInBoxI;
+    std::vector<std::vector<int>> binsInBox;
+    for(int Bin = search_box[0]; Bin < search_box[1]+1; ++Bin) {
+      std::vector<int> partial_{Bin};
+      binsInBox.push_back(partial_);
+    }
+    int dim = 1;
+    int ind = 2;
+    while(dim != N) {   
+      for(auto const& el : binsInBoxI) {
+        auto it = binsInBoxI.begin();
+        binsInBoxI.erase(it);
+        for(int Bin = search_box[ind]; Bin < search_box[ind+1]+1; ++Bin) {
+          std::vector<int> partial_{el};
+          binsInBox.push_back(partial_);
+        }
       }
+      ++dim;
+      ind += 2;
+    }
+
+    for(auto const& bin : binsInBox) {
+      // get the id of this bin
+      int binId = lt.getGlobalBinByBin(bin);
+      // get the size of this bin
+      int binSize = lt[binId].size();
+      
+      // iterate inside this bin
+      for (int binIter = 0; binIter < binSize; ++binIter) {
+        int j = lt[binId][binIter];
+        // query N_{dc_}(i)
+        float dist_ij = distance(i, j);
+        if(dist_ij <= dc_) {
+          // sum weights within N_{dc_}(i)
+          points_.rho[i] += (i == j ? 1.f : 0.5f) * points_.weight[j];
+        }
+      } // end of interate inside this bin
     } // end of loop over bins in search box
   } // end of loop over points
 }

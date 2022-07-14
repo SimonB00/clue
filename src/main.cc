@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
   //////////////////////////////
   // MARK -- test run
   //////////////////////////////
-  mainRun(inputFileName, outputFileName,
+  mainRun<2>(inputFileName, outputFileName,
           dc, rhoc, outlierDeltaFactor, 
           useGPU, totalNumberOfEvent, verbose);
 
