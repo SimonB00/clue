@@ -34,11 +34,11 @@ public:
   Points<N> points_;
   
   //bool setPoints(int n, float* x, float* y, int* layer, float* weight) {
-  bool setPoints(int n, std::array<std::vector<float>,N> coordinates, int* layer, float* weight) {
+  bool setPoints(int n, std::array<std::vector<float>,N>& coordinates, int* layer, float* weight) {
     
     points_.clear();
     // input variables
-    for(int i=0; i<n; ++i) {
+    for(int i = 0; i < n; ++i) {
 	    //points_.x.push_back(x[i]);
 	    //points_.y.push_back(y[i]);
 	    for(int j = 0: j != N; ++j) {
@@ -68,6 +68,8 @@ public:
 
   void infoSeeds();
   void infoHits();
+
+  void for_recursion(std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_);
 
   std::string getVerboseString_(unsigned it,
 				float x, float y, int layer, float weight,

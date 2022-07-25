@@ -41,10 +41,34 @@ void CLUEAlgo<N>::prepareDataStructures( std::array<LayerTiles<N>, NLAYERS> & al
 }
 
 template <uint8_t N>
+void CLUEAlgo<N>::for_recursion(std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_){
+    if(!N){
+        int binId = lt_.getGlobalBinByBin(base_vector);
+        // get the size of this bin
+        int binSize = lt_[binId].size();
+        
+        // iterate inside this bin
+        for (int binIter = 0; binIter < binSize; ++binIter) {
+          int j = lt_[binId][binIter];
+          // query N_{dc_}(i)
+          float dist_ij = distance(i, j);
+          if(dist_ij <= dc_) {
+            // sum weights within N_{dc_}(i)
+            points_.rho[i] += (i == j ? 1.f : 0.5f) * points_.weight[j];
+          }
+        } // end of interate inside this bin
+    }
+    for(int i = dim_min[dim_min.size() - N]; i < dim_max[dim_max.size() - N]; ++i){
+        base_vector[base_vector.size()-N] = i;
+        for_recursion(N-1, base_vector, dim_min, dim_max);
+    }
+}
+
+template <uint8_t N>
 void CLUEAlgo<N>::calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> & allLayerTiles ) {
   // loop over all points
   for(unsigned i = 0; i < points_.n; ++i) {
-    LayerTiles& lt = allLayerTiles[points_.layer[i]]; // there is only one layer, so this will always be the same
+    LayerTiles<N>& lt = allLayerTiles[points_.layer[i]]; // there is only one layer, so this will always be the same
 
     // get search box
     std::array<std::vector<float>,N> minMax;
@@ -55,33 +79,17 @@ void CLUEAlgo<N>::calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> & all
     std::array<int,2*N> search_box = lt.searchBox(minMax);
 
     // loop over bins in the search box
-    
-    for(int xBin = search_box[0]; xBin < search_box[1]+1; ++xBin) {
-      for(int yBin = search_box[2]; yBin < search_box[3]+1; ++yBin) {
-        // get the id of this bin
-        int binId = lt.getGlobalBinByBin(xBin,yBin);
-        // get the size of this bin
-        int binSize = lt[binId].size();
-        
-        // iterate inside this bin
-        for (int binIter = 0; binIter < binSize; ++binIter) {
-          int j = lt[binId][binIter];
-          // query N_{dc_}(i)
-          float dist_ij = distance(i, j);
-          if(dist_ij <= dc_) {
-            // sum weights within N_{dc_}(i)
-            points_.rho[i] += (i == j ? 1.f : 0.5f) * points_.weight[j];
-          }
-        } // end of interate inside this bin
-    
+    std::vector<int> binVec(N);
+    std::vector<int> dimMin;
+    std::vector<int> dimMax;
+    for(int j = 0; j != search_box.size(); ++j) {
+      if(j%2 == 0) {
+        dimMin.push_back(search_box[j]);
+      } else {
+        dimMax.push_back(search_box[j]);
       }
-    } // end of loop over bins in search box
-    
-    //int NtotalBin = 1;
-    //for(int j = 0; j != 2*N; j += 2) {
-    //  int nBinDim = search_box[j+1] - search_box[j];
-    //  NtotalBin = NtotalBin*nBinDim;
-    //}    
+    }
+    for_recursion<N>(binVec,dimMin,dimMax,lt);
   } // end of loop over points
 }
 

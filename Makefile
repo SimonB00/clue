@@ -78,17 +78,17 @@ all: build
 #       corresponding CUDA one built using CUPLA. Which one to use must be
 #       selected at runtime via a flag.
 
-build: main mainCuplaCPUTBB mainCuplaCUDA
+build: main #mainCuplaCPUTBB mainCuplaCUDA
 
 # Native C++ implementation bundled with native CUDA
-CLUEAlgo.cuda.o:src/CLUEAlgoGPU.cu include/CLUEAlgoGPU.h
-	$(EXEC) $(NVCC) $(INCLUDES) $(NVCCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+#CLUEAlgo.cuda.o:src/CLUEAlgoGPU.cu include/CLUEAlgoGPU.h
+#	$(EXEC) $(NVCC) $(INCLUDES) $(NVCCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 CLUEAlgo.o:src/CLUEAlgo.cc include/CLUEAlgo.h
-	$(EXEC) $(NVCC) $(INCLUDES) $(NVCCFLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+	$(EXEC) $(INCLUDES) $(GENCODE_FLAGS) -o $@ -c $<
 
-main.o:src/main.cc include/CLUEAlgo.h include/CLUEAlgoGPU.h
-	$(EXEC) $(NVCC) $(INCLUDES) $(NVCCFLAGS) $(CUDA_FLAGS) $(GENCODE_FLAGS) -o $@ -c $<
+main.o:src/main.cc include/CLUEAlgo.h #include/CLUEAlgoGPU.h
+	$(EXEC) $(INCLUDES) $(CUDA_FLAGS) $(GENCODE_FLAGS) -o $@ -c $<
 
 main: main.o CLUEAlgo.cuda.o CLUEAlgo.o
 	$(EXEC) $(NVCC) $(NVCC_LDFLAGS) $(GENCODE_FLAGS) -o $@ $^ $(LIBRARIES)
