@@ -1,8 +1,9 @@
+//#include "/home/simone/Documents/GSOC/CLUE/clue-master/include/CLUEAlgo.h"
 #include "CLUEAlgo.h"
 
 template <uint8_t N>
 void CLUEAlgo<N>::makeClusters(){
-  std::array<LayerTiles, NLAYERS> allLayerTiles;
+  std::array<LayerTiles<N>, NLAYERS> allLayerTiles;
   // start clustering
   auto start = std::chrono::high_resolution_clock::now();
 
@@ -41,8 +42,8 @@ void CLUEAlgo<N>::prepareDataStructures( std::array<LayerTiles<N>, NLAYERS> & al
 }
 
 template <uint8_t N>
-void CLUEAlgo<N>::for_recursion(std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_){
-    if(!N){
+void CLUEAlgo<N>::for_recursion(std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_, int point_id){
+    if(!N) {
         int binId = lt_.getGlobalBinByBin(base_vector);
         // get the size of this bin
         int binSize = lt_[binId].size();
@@ -51,14 +52,14 @@ void CLUEAlgo<N>::for_recursion(std::vector<int> &base_vector,  std::vector<int>
         for (int binIter = 0; binIter < binSize; ++binIter) {
           int j = lt_[binId][binIter];
           // query N_{dc_}(i)
-          float dist_ij = distance(i, j);
+          float dist_ij = distance(point_id, j);
           if(dist_ij <= dc_) {
             // sum weights within N_{dc_}(i)
-            points_.rho[i] += (i == j ? 1.f : 0.5f) * points_.weight[j];
+            points_.rho[point_id] += (point_id == j ? 1.f : 0.5f) * points_.weight[j];
           }
         } // end of interate inside this bin
     }
-    for(int i = dim_min[dim_min.size() - N]; i < dim_max[dim_max.size() - N]; ++i){
+    for(int i = dim_min[dim_min.size() - N]; i < dim_max[dim_max.size() - N]; ++i) {
         base_vector[base_vector.size()-N] = i;
         for_recursion(N-1, base_vector, dim_min, dim_max);
     }
@@ -89,7 +90,7 @@ void CLUEAlgo<N>::calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> & all
         dimMax.push_back(search_box[j]);
       }
     }
-    for_recursion<N>(binVec,dimMin,dimMax,lt);
+    for_recursion<N>(binVec,dimMin,dimMax,lt,i);
   } // end of loop over points
 }
 
@@ -106,7 +107,7 @@ void CLUEAlgo<N>::calculateDistanceToHigher(std::array<LayerTiles<N>, NLAYERS> &
     float rho_i = points_.rho[i];
 
     //get search box
-    LayerTiles& lt = allLayerTiles[points_.layer[i]];
+    LayerTiles<N>& lt = allLayerTiles[points_.layer[i]];
     std::array<int,4> search_box = lt.searchBox(xi-dm, xi+dm, yi-dm, yi+dm);
     
     // loop over all bins in the search box
@@ -210,7 +211,7 @@ inline float CLUEAlgo<N>::distance(int i, int j) const {
     //const float dy = points_.y[i] - points_.y[j];
     //return std::sqrt(dx * dx + dy * dy);
     float qSum = 0.f;   // quadratic sum
-    for(int k = 0: k != N; ++k) {
+    for(int k = 0; k != N; ++k) {
       qSum += std::pow(points_.coordinates_[k][i] - points_.coordinates_[k][j],2);
     }
     return std::sqrt(qSum);

@@ -41,7 +41,7 @@ public:
     for(int i = 0; i < n; ++i) {
 	    //points_.x.push_back(x[i]);
 	    //points_.y.push_back(y[i]);
-	    for(int j = 0: j != N; ++j) {
+	    for(int j = 0; j != N; ++j) {
         points_.coordinates_[j].push_back(coordinates[j][i]);
       }
       points_.layer.push_back(layer[i]);
@@ -69,7 +69,7 @@ public:
   void infoSeeds();
   void infoHits();
 
-  void for_recursion(std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_);
+  void for_recursion(std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_, int point_id);
 
   std::string getVerboseString_(unsigned it,
 				float x, float y, int layer, float weight,
@@ -84,32 +84,33 @@ public:
       s << sep << delta;
     else
       s << ",999"; //convert +inf to 999 in verbose
-    s << sep << nh << sep << isseed << sep << clusterid << std::endl;
+    s << sep << nh << sep << isseed << sep << clusterid << '\n';
     return s.str();
   }
   
   void verboseResults(std::string outputFileName="cout", unsigned nVerbose=-1) const {
-    if(verbose_)
-      {
-	if (nVerbose==-1) nVerbose=points_.n;
-    
-	std::string s;
-	s = "index,x,y,layer,weight,rho,delta,nh,isSeed,clusterId\n";
-	for(unsigned i=0; i<nVerbose; i++) {
-	  s += getVerboseString_(i, points_.x[i], points_.y[i], points_.layer[i],
-				 points_.weight[i], points_.rho[i], points_.delta[i],
-				 points_.nearestHigher[i], points_.isSeed[i],
-				 points_.clusterIndex[i], nVerbose);
-	}
-
-	if(outputFileName.compare("cout")==0) //verbose to screen
-	  std::cout << s << std::endl;
-	else { //verbose to file
-	  std::ofstream oFile(outputFileName);
-	  oFile << s;
-	  oFile.close();
-	}
-      }
+  //  if(verbose_)
+  //    {
+	//if (nVerbose==-1) nVerbose=points_.n;
+  //  
+	//std::string s;
+	//s = "index,x,y,layer,weight,rho,delta,nh,isSeed,clusterId\n";
+	//for(unsigned i=0; i<nVerbose; i++) {
+	//  s += getVerboseString_(i, points_.x[i], points_.y[i], points_.layer[i],
+	//			 points_.weight[i], points_.rho[i], points_.delta[i],
+	//			 points_.nearestHigher[i], points_.isSeed[i],
+	//			 points_.clusterIndex[i], nVerbose);
+	//}
+  //
+	//if(outputFileName.compare("cout")==0) //verbose to screen
+	//  std::cout << s << '\n;
+	//else { //verbose to file
+	//  std::ofstream oFile(outputFileName);
+	//  oFile << s;
+	//  oFile.close();
+	//}
+  //    }
+  ;
   }
         
 private:

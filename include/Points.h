@@ -1,6 +1,10 @@
 #ifndef Points_h
 #define Points_h
 
+#include<vector>
+#include<array>
+#include<stdint.h>
+
 template <uint8_t N>
 struct Points {
   std::array<std::vector<float>,N> coordinates_; // this array contains all the N-dimensional coordinate vectors
