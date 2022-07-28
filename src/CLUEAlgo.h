@@ -70,12 +70,11 @@ public:
     std::array<LayerTiles<N>, NLAYERS> allLayerTiles;
     // start clustering
     auto start = std::chrono::high_resolution_clock::now();
-
     prepareDataStructures(allLayerTiles);
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
     std::cout << "--- prepareDataStructures:     " << elapsed.count() *1000 << " ms\n";
-
+    
     start = std::chrono::high_resolution_clock::now();
     calculateLocalDensity(allLayerTiles);
     finish = std::chrono::high_resolution_clock::now();
@@ -95,32 +94,52 @@ public:
   void infoHits();
 
   void for_recursion(int N_, std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, LayerTiles<N>& lt_, int point_id) {
-    if(!N) {
+    //std::cout << __LINE__ << std::endl;
+    //std::cout << N_ << '\n';
+    if(!N_) {
+        //std::cout << __LINE__ << std::endl;
         int binId = lt_.getGlobalBinByBin(base_vector);
+        //std::cout << __LINE__ << std::endl;
         // get the size of this bin
         int binSize = lt_[binId].size();
+        //std::cout << "binSize " << binSize << '\n';
+        //std::cout << __LINE__ << std::endl;
         
         // iterate inside this bin
         for (int binIter = 0; binIter < binSize; ++binIter) {
+          //std::cout << __LINE__ << std::endl;
           int j = lt_[binId][binIter];
+          //std::cout << __LINE__ << std::endl;
           // query N_{dc_}(i)
           float dist_ij = distance(point_id, j);
+          //std::cout << __LINE__ << std::endl;
           if(dist_ij <= dc_) {
             // sum weights within N_{dc_}(i)
-            points_.rho[point_id] += (point_id == j ? 1.f : 0.5f) * points_.weight[j];
+            points_.rho.at(point_id) += (point_id == j ? 1.f : 0.5f) * points_.weight.at(j);
+            //std::cout << __LINE__ << std::endl;
           }
         } // end of interate inside this bin
+
+        return;
     }
-    for(int i = dim_min[dim_min.size() - N]; i < dim_max[dim_max.size() - N]; ++i) {
-        base_vector[base_vector.size()-N] = i;
-        for_recursion(N-1, base_vector, dim_min, dim_max, lt_, point_id);
+    //std::cout << __LINE__ << std::endl;
+    //std::cout << N_ << '\n';
+    for(int i = dim_min.at(dim_min.size() - N_); i < dim_max.at(dim_max.size() - N_); ++i) {
+        //std::cout << "dentro al for" << '\n';
+        //std::cout << "minSize" << dim_min.size() << '\n';
+        //std::cout << "maxSize" << dim_max.size() << '\n';
+        //std::cout << "min" << dim_min.at(dim_min.size() - N) << '\n';
+        //std::cout << "max" << dim_max.at(dim_max.size() - N) << '\n';
+        base_vector.at(base_vector.size() - N_) = i;
+        for_recursion(N_-1, base_vector, dim_min, dim_max, lt_, point_id);
     }
+    //std::cout << "---------------------" << '\n';
   };
 
-  //for_recursion used for the function calculateDistanceToHigher
+  // for_recursion used for the function calculateDistanceToHigher
   void for_recursion_DistanceToHigher(int N_, std::vector<int> &base_vector,  std::vector<int> &dim_min, std::vector<int> &dim_max, 
     LayerTiles<N>& lt_, float rho_i, float delta_i, int nearestHigher_i, int point_id) {
-      if(!N){
+      if(!N_) {
           int binId = lt_.getGlobalBinByBin(base_vector);
           // get the size of this bin
           int binSize = lt_[binId].size();
@@ -131,7 +150,7 @@ public:
             // query N'_{dm}(i)
             bool foundHigher = (points_.rho[j] > rho_i);
             // in the rare case where rho is the same, use detid
-            foundHigher = foundHigher || ((points_.rho[j] == rho_i) && (j > point_id) );
+            foundHigher = foundHigher || ((points_.rho.at(j) == rho_i) && (j > point_id) );
             float dist_ij = distance(point_id, j);
             if(foundHigher && dist_ij <= dm) { // definition of N'_{dm}(i)
               // find the nearest point within N'_{dm}(i)
@@ -142,21 +161,23 @@ public:
               }
             }
           } // end of interate inside this bin
+
+          return;
       }
-      for(int i = dim_min[dim_min.size() - N]; i < dim_max[dim_max.size() - N]; ++i){
-          base_vector[base_vector.size()-N] = i;
-          for_recursion_DistanceToHigher(N-1, base_vector, dim_min, dim_max, lt_, rho_i, delta_i, nearestHigher_i, point_id);
+      for(int i = dim_min.at(dim_min.size() - N_); i < dim_max.at(dim_max.size() - N_); ++i){
+          base_vector.at(base_vector.size() - N_) = i;
+          for_recursion_DistanceToHigher(N_ - 1, base_vector, dim_min, dim_max, lt_, rho_i, delta_i, nearestHigher_i, point_id);
       }
   }
 
-  std::string getVerboseString_(unsigned it,
-				float x, float y, int layer, float weight,
-				float rho, float delta,
-				int nh, int isseed, float clusterid,
-				unsigned nVerbose) const {
+  std::string getVerboseString_(unsigned it, std::array<std::vector<float>,N> coordinates, int layer, float weight,
+				float rho, float delta, int nh, int isseed, float clusterid, unsigned nVerbose) const {
     std::stringstream s;
     std::string sep = ",";
-    s << it << sep << x << sep << y << sep;
+    s << it << sep;
+    for(int i = 0; i != N; ++i) {
+      s << coordinates[i][it] << sep;
+    }
     s << layer << sep << weight << sep << rho;
     if (delta <= 999)
       s << sep << delta;
@@ -167,28 +188,31 @@ public:
   }
   
   void verboseResults(std::string outputFileName="cout", unsigned nVerbose=-1) const {
-  //  if(verbose_)
-  //    {
-	//if (nVerbose==-1) nVerbose=points_.n;
-  //  
-	//std::string s;
-	//s = "index,x,y,layer,weight,rho,delta,nh,isSeed,clusterId\n";
-	//for(unsigned i=0; i<nVerbose; i++) {
-	//  s += getVerboseString_(i, points_.x[i], points_.y[i], points_.layer[i],
-	//			 points_.weight[i], points_.rho[i], points_.delta[i],
-	//			 points_.nearestHigher[i], points_.isSeed[i],
-	//			 points_.clusterIndex[i], nVerbose);
-	//}
-  //
-	//if(outputFileName.compare("cout")==0) //verbose to screen
-	//  std::cout << s << '\n;
-	//else { //verbose to file
-	//  std::ofstream oFile(outputFileName);
-	//  oFile << s;
-	//  oFile.close();
-	//}
-  //    }
-  ;
+    if(verbose_) {
+	    if (nVerbose==-1) nVerbose=points_.n;
+
+	    std::string s;
+	    s = "index,";
+      for(int i = 0; i != N; ++i) {
+        s += "x" + std::to_string(i) + ",";
+      }
+      s += "layer,weight,rho,delta,nh,isSeed,clusterId\n";
+	    
+      for(unsigned i=0; i<nVerbose; i++) {
+	      s += getVerboseString_(i, points_.coordinates_, points_.layer[i],
+	    			 points_.weight[i], points_.rho[i], points_.delta[i],
+	    			 points_.nearestHigher[i], points_.isSeed[i],
+	    			 points_.clusterIndex[i], nVerbose);
+	    }
+
+	    if(outputFileName.compare("cout")==0) //verbose to screen
+	      std::cout << s << std::endl;
+	    else { //verbose to file
+	      std::ofstream oFile(outputFileName);
+	      oFile << s;
+	      oFile.close();
+	    }
+    }
   }
         
 private:
@@ -201,6 +225,7 @@ private:
         coords.push_back(points_.coordinates_[j][i]);
       }
       allLayerTiles[points_.layer[i]].fill(coords, i);
+      //std::cout << "allLayerTilesSize " << allLayerTiles.size() << '\n';
       // so it simply takes the layer in which the hits where detected (there is only 1 layer actually, so it should be easier),
       // divides them in tiles (bins) and saves the index of the point (hit) recorded in each of them.
     }
@@ -209,7 +234,10 @@ private:
   void calculateLocalDensity(std::array<LayerTiles<N>, NLAYERS> & allLayerTiles) {
     // loop over all points
     for(unsigned i = 0; i < points_.n; ++i) {
+      //std::cout << i << '\n';
+      //std::cout << __LINE__ << std::endl;
       LayerTiles<N>& lt = allLayerTiles[points_.layer[i]]; // there is only one layer, so this will always be the same
+      //std::cout << __LINE__ << std::endl;
 
       // get search box
       std::array<std::vector<float>,N> minMax;
@@ -217,7 +245,9 @@ private:
         std::vector<float> partial_minMax{points_.coordinates_[j][i]-dc_,points_.coordinates_[j][i]+dc_};
         minMax[j] = partial_minMax;
       }
+      //std::cout << __LINE__ << std::endl;
       std::array<int,2*N> search_box = lt.searchBox(minMax);
+      //std::cout << __LINE__ << std::endl;
 
       // loop over bins in the search box
       std::vector<int> binVec(N);
@@ -230,13 +260,17 @@ private:
           dimMax.push_back(search_box[j]);
         }
       }
+      //std::cout << __LINE__ << std::endl;
       for_recursion(N,binVec,dimMin,dimMax,lt,i);
+      //std::cout << __LINE__ << std::endl;
+      //std::cout << "Fine di CalculateLocDen" << std::endl;
     } // end of loop over points
   };
 
   void calculateDistanceToHigher(std::array<LayerTiles<N>, NLAYERS> & allLayerTiles ) {
     // loop over all points
     for(unsigned i = 0; i < points_.n; ++i) {
+      //std::cout << i << '\n';
       // default values of delta and nearest higher for i
       float delta_i = std::numeric_limits<float>::max();
       int nearestHigher_i = -1; // if this doesn't change, the point is either a seed or an outlier
@@ -265,9 +299,12 @@ private:
         }
       }
       for_recursion_DistanceToHigher(N,binVec,dimMin,dimMax,lt, rho_i, delta_i, nearestHigher_i, i);
+      //std::cout << __LINE__ << std::endl;
 
       points_.delta[i] = delta_i;
+      //std::cout << __LINE__ << std::endl;
       points_.nearestHigher[i] = nearestHigher_i;
+      //std::cout << __LINE__ << std::endl;
     } // end of loop over points
   }
   void findAndAssignClusters() {

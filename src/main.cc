@@ -146,13 +146,13 @@ int main(int argc, char *argv[]) {
   //////////////////////////////
   std::string underscore="_", suffix = ".csv";
 
-  std::string inputFileName = "data/input/";
+  std::string inputFileName = "/home/simone/Documents/GSOC/CLUE/clue-master/data/input/";
   inputFileName.append(argv[1]);
   inputFileName.append(suffix);
-  std::cout << "Input file: " << inputFileName << std::endl;
+  std::cout << "Input file: " << inputFileName << '\n';
 
 
-  std::string outputFileName = "data/output/";
+  std::string outputFileName = "/home/simone/Documents/GSOC/CLUE/clue-master/data/output/";
   outputFileName.append(argv[1]);
   outputFileName.append(underscore);
   outputFileName.append(std::to_string(int(dc)));
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
   outputFileName.append(underscore);
   outputFileName.append(std::to_string(int(outlierDeltaFactor)));
   outputFileName.append(suffix);
-  std::cout << "Output file: " << outputFileName << std::endl;
+  std::cout << "Output file: " << outputFileName << '\n';
 
 
   //////////////////////////////
