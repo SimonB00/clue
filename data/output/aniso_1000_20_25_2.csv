@@ -1,4 +1,4 @@
-indexx0,x1,layer,weight,rho,delta,nh,isSeed,clusterId
+index,x0,x1,layer,weight,rho,delta,nh,isSeed,clusterId
 0,-51.86,-64.09,0,1,16,999,-1,0,-1
 1,171.87,-154.07,0,1,23.5,999,-1,0,-1
 2,-108.29,15.32,0,1,25,999,-1,1,0
